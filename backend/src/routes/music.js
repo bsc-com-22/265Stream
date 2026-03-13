@@ -206,10 +206,10 @@ router.get('/songs/:id', optionalAuth, async (req, res) => {
  * Get a signed URL for streaming/downloading a purchased song
  * Only available after purchase verification
  */
-router.get('/songs/:id/stream', authenticate, requireEmailVerification, async (req, res) => {
+router.get('/songs/:id/stream', optionalAuth, async (req, res) => {
     try {
         const songId = req.params.id;
-        const userId = req.user.id;
+        const userId = req.user?.id;
 
         // Fetch the song
         const { data: song, error: songError } = await supabaseAdmin
@@ -223,7 +223,8 @@ router.get('/songs/:id/stream', authenticate, requireEmailVerification, async (r
         }
 
         // Check if the user has purchased the song (or if it's free)
-        if (!song.is_free) {
+        let hasFullAccess = song.is_free;
+        if (!hasFullAccess && userId) {
             const { data: purchase } = await supabaseAdmin
                 .from('purchases')
                 .select('id')
@@ -232,14 +233,15 @@ router.get('/songs/:id/stream', authenticate, requireEmailVerification, async (r
                 .eq('status', 'completed')
                 .maybeSingle();
 
-            if (!purchase) {
+            if (purchase) {
+                hasFullAccess = true;
+            } else {
                 // Also check if user purchased the album containing this song
                 const { data: albumSongs } = await supabaseAdmin
                     .from('album_songs')
                     .select('album_id')
                     .eq('song_id', songId);
 
-                let hasAlbumPurchase = false;
                 if (albumSongs?.length) {
                     const albumIds = albumSongs.map(as => as.album_id);
                     const { data: albumPurchase } = await supabaseAdmin
@@ -249,19 +251,13 @@ router.get('/songs/:id/stream', authenticate, requireEmailVerification, async (r
                         .in('album_id', albumIds)
                         .eq('status', 'completed')
                         .maybeSingle();
-                    hasAlbumPurchase = !!albumPurchase;
-                }
-
-                if (!hasAlbumPurchase) {
-                    return res.status(403).json({
-                        error: 'Purchase required',
-                        message: 'You must purchase this song before streaming or downloading',
-                    });
+                    hasFullAccess = !!albumPurchase;
                 }
             }
         }
 
         // Generate a short-lived signed URL for the audio file
+        // We allow generating the URL even if not purchased to support the 30s preview on frontend
         const { data: signedUrlData, error: urlError } = await supabaseAdmin.storage
             .from('audio-files')
             .createSignedUrl(song.audio_storage_path, 600); // 10 minutes
@@ -270,20 +266,22 @@ router.get('/songs/:id/stream', authenticate, requireEmailVerification, async (r
             throw urlError;
         }
 
-        // Increment play count
+        // Increment play count (only if they have access or it's a preview play)
         await supabaseAdmin.rpc('increment_play_count', { p_song_id: songId });
 
         // Log the stream
         await supabaseAdmin.from('stream_logs').insert({
-            user_id: userId,
+            user_id: userId || null, // Allow anonymous preview logs
             song_id: songId,
             ip_address: req.ip,
             user_agent: req.headers['user-agent'],
+            details: { is_preview: !hasFullAccess }
         });
 
         res.json({
             streamUrl: signedUrlData.signedUrl,
             expiresIn: 600,
+            isFullAccess: hasFullAccess,
             song: {
                 id: song.id,
                 title: song.title,

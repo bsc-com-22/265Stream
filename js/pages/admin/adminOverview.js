@@ -2,9 +2,9 @@ import { formatCurrency, getTimeAgo } from '../../data.js';
 import { icon } from '../../icons.js';
 
 export function renderAdminOverview(stats = {}, recentActivity = []) {
-    const totalRevenue = stats.totalRevenue || 0;
+  const totalRevenue = stats.totalRevenue || 0;
 
-    return `
+  return `
     <div class="page-header">
       <h1>Admin Dashboard</h1>
       <p>System overview and platform metrics</p>
@@ -29,7 +29,7 @@ export function renderAdminOverview(stats = {}, recentActivity = []) {
         <div class="stat-label">Total Songs</div>
       </div>
       <div class="stat-card" style="--stat-accent: var(--success);">
-        <div class="stat-icon" style="background: rgba(34,197,94,0.12); color: var(--success);">${icon('dollarSign', 22)}</div>
+        <div class="stat-icon" style="background: rgba(34,197,94,0.12); color: var(--success);">${icon('creditCard', 22)}</div>
         <div class="stat-value">${formatCurrency(totalRevenue)}</div>
         <div class="stat-label">Platform Revenue</div>
         <div class="stat-change up">${icon('trendingUp', 12)} +8% this month</div>
@@ -59,14 +59,14 @@ export function renderAdminOverview(stats = {}, recentActivity = []) {
 }
 
 function renderActivityItem(item) {
-    let iconName = 'activity';
-    let color = 'var(--info)';
-    if (item.action.includes('user')) { iconName = 'user'; color = 'var(--primary)'; }
-    if (item.action.includes('artist')) { iconName = 'mic'; color = 'var(--warning)'; }
-    if (item.action.includes('purchase')) { iconName = 'shoppingCart'; color = 'var(--success)'; }
-    if (item.action.includes('content')) { iconName = 'music'; color = 'var(--danger)'; }
+  let iconName = 'activity';
+  let color = 'var(--info)';
+  if (item.action.includes('user')) { iconName = 'user'; color = 'var(--primary)'; }
+  if (item.action.includes('artist')) { iconName = 'mic'; color = 'var(--warning)'; }
+  if (item.action.includes('purchase')) { iconName = 'shoppingCart'; color = 'var(--success)'; }
+  if (item.action.includes('content')) { iconName = 'music'; color = 'var(--danger)'; }
 
-    return `
+  return `
     <div style="display: flex; align-items: center; gap: 0.85rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
       <div style="width: 36px; height: 36px; border-radius: var(--radius-full); background: ${color}15; color: ${color}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
         ${icon(iconName, 16)}
@@ -80,7 +80,7 @@ function renderActivityItem(item) {
 }
 
 function renderHealthBar(label, value, color) {
-    return `
+  return `
     <div>
       <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
         <span style="font-size: 0.8rem; font-weight: 500;">${label}</span>

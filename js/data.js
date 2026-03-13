@@ -79,7 +79,7 @@ export function formatNumber(num) {
 }
 
 export function formatCurrency(amount) {
-  return '$' + amount.toFixed(2);
+  return 'MK ' + new Intl.NumberFormat('en-MW', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
 }
 
 export function formatDate(dateStr) {

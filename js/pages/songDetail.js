@@ -6,24 +6,24 @@ import { api } from '../apiClient.js';
 import { icon } from '../icons.js';
 
 export async function renderSongDetail(container, params = {}) {
-    const songId = params.currentSongId || appState.currentSongId;
-    
-    container.innerHTML = `<div style="display:flex; justify-content:center; align-items:center; min-height:50vh; width: 100%;"><p style="color:var(--text-muted); font-size:1.2rem;">Loading song...</p></div>`;
+  const songId = params.currentSongId || appState.currentSongId;
 
-    let song = null;
-    let relatedSongs = [];
-    try {
-        song = await api.getSong(songId);
-        if (song && song.artist_id) {
-            const relatedRes = await api.getSongs({ artist_id: song.artist_id, limit: 5 });
-            relatedSongs = (relatedRes.data || []).filter(s => s.id !== song.id);
-        }
-    } catch(err) {
-        console.error('Error fetching song detail:', err);
+  container.innerHTML = `<div style="display:flex; justify-content:center; align-items:center; min-height:50vh; width: 100%;"><p style="color:var(--text-muted); font-size:1.2rem;">Loading song...</p></div>`;
+
+  let song = null;
+  let relatedSongs = [];
+  try {
+    song = await api.getSong(songId);
+    if (song && song.artist_id) {
+      const relatedRes = await api.getSongs({ artist_id: song.artist_id, limit: 5 });
+      relatedSongs = (relatedRes.data || []).filter(s => s.id !== song.id);
     }
+  } catch (err) {
+    console.error('Error fetching song detail:', err);
+  }
 
-    if (!song) {
-        container.innerHTML = `
+  if (!song) {
+    container.innerHTML = `
       <div class="page-container">
         <div class="empty-state">
           ${icon('music', 64)}
@@ -33,12 +33,12 @@ export async function renderSongDetail(container, params = {}) {
         </div>
       </div>
     `;
-        return;
-    }
+    return;
+  }
 
-    const isPurchased = song.purchased || appState.purchasedSongIds.includes(song.id);
+  const isPurchased = song.purchased || appState.purchasedSongIds.includes(song.id);
 
-    container.innerHTML = `
+  container.innerHTML = `
     <div class="song-detail">
       <!-- Back button -->
       <button class="btn btn-ghost mb-3" onclick="window.navigateTo('home')" style="margin-left: -0.5rem;">
@@ -65,11 +65,11 @@ export async function renderSongDetail(container, params = {}) {
           </div>
           <div class="song-price-tag">${formatCurrency(parseFloat(song.price) || 0)}</div>
           <div class="song-detail-actions">
-            <button class="btn btn-primary btn-lg" onclick="window.playSongById(${song.id})">
+            <button class="btn btn-primary btn-lg" onclick="window.playSongById('${song.id}')">
               ${icon('play', 20)} Play Preview
             </button>
             ${isPurchased
-            ? `
+      ? `
                 <button class="btn btn-success btn-lg">
                   ${icon('check', 20)} Purchased
                 </button>
@@ -77,12 +77,12 @@ export async function renderSongDetail(container, params = {}) {
                   ${icon('download', 20)} Download
                 </button>
               `
-            : `
-                <button class="btn btn-secondary btn-lg" onclick="window.purchaseSongById(${song.id})">
+      : `
+                <button class="btn btn-secondary btn-lg" onclick="window.purchaseSongById('${song.id}')">
                   ${icon('shoppingCart', 20)} Buy Now
                 </button>
               `
-        }
+    }
             <button class="btn btn-ghost btn-icon" title="Add to Favorites">
               ${icon('heart', 20)}
             </button>
@@ -94,7 +94,7 @@ export async function renderSongDetail(container, params = {}) {
       <div class="audio-preview">
         <div class="preview-label">Audio Preview</div>
         <div class="audio-player">
-          <button class="play-pause-btn" onclick="window.playSongById(${song.id})">
+          <button class="play-pause-btn" onclick="window.playSongById('${song.id}')">
             ${icon('play', 22)}
           </button>
           <div class="progress-container">
@@ -160,18 +160,18 @@ export async function renderSongDetail(container, params = {}) {
     </div>
   `;
 
-    // Expose toast for download button
-    window.showToastMsg = (type, title, msg) => {
-        import('../app.js').then(m => m.showToast(type, title, msg));
-    };
+  // Expose toast for download button
+  window.showToastMsg = (type, title, msg) => {
+    import('../app.js').then(m => m.showToast(type, title, msg));
+  };
 
-    // Simulate progress bar animation
-    animatePreviewProgress();
+  // Simulate progress bar animation
+  animatePreviewProgress();
 }
 
 function renderRelatedCard(song) {
-    const isPurchased = song.purchased || appState.purchasedSongIds.includes(song.id);
-    return `
+  const isPurchased = song.purchased || appState.purchasedSongIds.includes(song.id);
+  return `
     <div class="music-card" onclick="window.navigateTo('songDetail', {currentSongId: '${song.id}'})">
       <div class="card-artwork">
         <img src="${song.coverUrl || 'assets/images/albums/default.png'}" alt="${song.title}" loading="lazy"/>
@@ -188,42 +188,42 @@ function renderRelatedCard(song) {
       <div class="card-meta">
         <span class="card-price">${formatCurrency(parseFloat(song.price) || 0)}</span>
         ${isPurchased
-            ? `<span class="badge badge-success">${icon('check', 10)} Owned</span>`
-            : `<button class="card-buy" onclick="event.stopPropagation(); window.purchaseSongById('${song.id}')">Buy</button>`
-        }
+      ? `<span class="badge badge-success">${icon('check', 10)} Owned</span>`
+      : `<button class="card-buy" onclick="event.stopPropagation(); window.purchaseSongById('${song.id}')">Buy</button>`
+    }
       </div>
     </div>
   `;
 }
 
 function animatePreviewProgress() {
-    const fill = document.querySelector('.audio-preview .progress-fill');
-    if (!fill) return;
+  const fill = document.querySelector('.audio-preview .progress-fill');
+  if (!fill) return;
 
-    let width = 0;
-    let playing = false;
+  let width = 0;
+  let playing = false;
 
-    const playBtn = document.querySelector('.audio-preview .play-pause-btn');
-    if (playBtn) {
-        playBtn.addEventListener('click', () => {
-            playing = !playing;
-            playBtn.innerHTML = icon(playing ? 'pause' : 'play', 22);
+  const playBtn = document.querySelector('.audio-preview .play-pause-btn');
+  if (playBtn) {
+    playBtn.addEventListener('click', () => {
+      playing = !playing;
+      playBtn.innerHTML = icon(playing ? 'pause' : 'play', 22);
 
-            if (playing) {
-                const interval = setInterval(() => {
-                    if (!playing || width >= 100) {
-                        clearInterval(interval);
-                        if (width >= 100) {
-                            width = 0;
-                            playing = false;
-                            playBtn.innerHTML = icon('play', 22);
-                        }
-                        return;
-                    }
-                    width += 0.5;
-                    fill.style.width = width + '%';
-                }, 100);
+      if (playing) {
+        const interval = setInterval(() => {
+          if (!playing || width >= 100) {
+            clearInterval(interval);
+            if (width >= 100) {
+              width = 0;
+              playing = false;
+              playBtn.innerHTML = icon('play', 22);
             }
-        });
-    }
+            return;
+          }
+          width += 0.5;
+          fill.style.width = width + '%';
+        }, 100);
+      }
+    });
+  }
 }

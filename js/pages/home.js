@@ -133,7 +133,7 @@ function renderHeroCarousel(featuredSongs) {
                 <h1>${song.title}</h1>
                 <p class="artist">${song.artist ? song.artist.name : 'Unknown Artist'} ${song.albumName ? `· ${song.albumName}` : ''}</p>
                 <div class="hero-actions">
-                  <button class="btn btn-primary btn-lg" onclick="window.playSongById(${song.id})">
+                  <button class="btn btn-primary btn-lg" onclick="window.playSongById('${song.id}')">
                     ${icon('play', 20)} Play Now
                   </button>
                   ${song.purchased || appState.purchasedSongIds.includes(song.id) || song.isFree
@@ -216,7 +216,7 @@ function renderAlbumCard(album) {
 
 function renderArtistCard(artist) {
   const artistName = artist.artist_name || artist.name || 'Unknown';
-  const initials = artistName.split(' ').map(n => n[(0)]).join('').substring(0, 2) || 'A';
+  const initials = artistName.split(' ').map(n => n[0]).join('').substring(0, 2) || 'A';
   const colors = ['#FF0000', '#FF4444', '#CC0000', '#FF6666', '#990000', '#FF2222'];
   // Quick hash to pick color
   let hash = 0;
