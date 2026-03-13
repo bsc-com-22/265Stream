@@ -142,15 +142,28 @@ function init() {
   renderMiniPlayer();
   renderToastContainer();
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const viewParam = urlParams.get('view');
+  const tabParam = urlParams.get('tab');
 
-
-  // Start at home
-  navigate('home');
+  // Determine initial view based on HTML filename or query param
+  const path = window.location.pathname;
+  if (path.includes('admin.html')) {
+    navigate('admin', { adminTab: tabParam || 'overview' });
+  } else if (path.includes('artist.html')) {
+    navigate('artistDashboard', { artistTab: tabParam || 'overview' });
+  } else if (path.includes('dashboard.html')) {
+    navigate('userDashboard', { dashboardTab: tabParam || 'overview' });
+  } else if (viewParam) {
+    navigate(viewParam);
+  } else {
+    navigate('home');
+  }
 
   // Navbar scroll effect
   window.addEventListener('scroll', () => {
     const navbar = document.querySelector('.navbar');
-    navbar.classList.toggle('scrolled', window.scrollY > 10);
+    if (navbar) navbar.classList.toggle('scrolled', window.scrollY > 10);
   });
 }
 
@@ -175,24 +188,24 @@ function renderNavbar() {
                 <div style="font-weight: 600; font-size: 0.875rem;">${user.full_name || user.username || 'User'}</div>
                 <div style="font-size: 0.75rem; color: var(--text-muted);">${user.email}</div>
             </div>
-            <div class="dropdown-item" onclick="window.navigateTo('userDashboard')">
+            <div class="dropdown-item" onclick="window.location.href='dashboard.html'">
                 ${icon('user', 18)} My Dashboard
             </div>
-            <div class="dropdown-item" onclick="window.navigateTo('userDashboard', {dashboardTab: 'purchases'})">
+            <div class="dropdown-item" onclick="window.location.href='dashboard.html?tab=purchases'">
                 ${icon('shoppingCart', 18)} My Purchases
             </div>
             ${user.role === 'artist' || user.role === 'admin' ? `
-            <div class="dropdown-item" onclick="window.navigateTo('artistDashboard')">
+            <div class="dropdown-item" onclick="window.location.href='artist.html'">
                 ${icon('mic', 18)} Artist Studio
             </div>
             ` : ''}
             ${user.role === 'admin' ? `
-            <div class="dropdown-item" onclick="window.navigateTo('admin')">
+            <div class="dropdown-item" onclick="window.location.href='admin.html'">
                 ${icon('shield', 18)} Admin Panel
             </div>
             ` : ''}
             <div class="dropdown-divider"></div>
-            <div class="dropdown-item" onclick="window.navigateTo('userDashboard', {dashboardTab: 'settings'})">
+            <div class="dropdown-item" onclick="window.location.href='dashboard.html?tab=settings'">
                 ${icon('settings', 18)} Settings
             </div>
             <div class="dropdown-divider"></div>
@@ -205,14 +218,14 @@ function renderNavbar() {
   } else {
     userSection = `
         <div style="display: flex; gap: 0.5rem;">
-            <button class="btn btn-secondary" onclick="window.navigateTo('login')">Log In</button>
-            <button class="btn btn-primary" onclick="window.navigateTo('register')">Sign Up</button>
+            <button class="btn btn-secondary" onclick="window.location.href='index.html?view=login'">Log In</button>
+            <button class="btn btn-primary" onclick="window.location.href='index.html?view=register'">Sign Up</button>
         </div>
         `;
   }
 
   navbar.innerHTML = `
-    <div class="navbar-brand" onclick="window.navigateTo('home')" style="cursor:pointer">
+    <div class="navbar-brand" onclick="window.location.href='index.html'" style="cursor:pointer">
       <svg viewBox="0 0 32 32" fill="none">
         <circle cx="16" cy="16" r="15" stroke="#FF0000" stroke-width="2"/>
         <circle cx="16" cy="16" r="6" fill="#FF0000"/>
@@ -228,13 +241,13 @@ function renderNavbar() {
     </div>
 
     <div class="navbar-links">
-      <a class="nav-link active" data-view="home" onclick="window.navigateTo('home')">
+      <a class="nav-link ${appState.currentView === 'home' ? 'active' : ''}" onclick="window.location.href='index.html'">
         ${icon('home', 16)} Home
       </a>
-      <a class="nav-link" data-view="browse" onclick="window.navigateTo('home')">
+      <a class="nav-link" onclick="window.location.href='index.html?view=home&browse=true'">
         ${icon('disc', 16)} Browse
       </a>
-      <a class="nav-link" data-view="artists" onclick="window.navigateTo('home')">
+      <a class="nav-link" onclick="window.location.href='index.html?view=home&artists=true'">
         ${icon('mic', 16)} Artists
       </a>
     </div>

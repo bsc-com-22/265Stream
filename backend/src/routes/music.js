@@ -382,11 +382,16 @@ router.post(
             const artistProfile = req.artistProfile;
             const userId = req.user.id;
 
-            // Generate slug
-            const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            // Generate unique slug
+            const baseSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            const slug = `${baseSlug}-${Math.random().toString(36).substring(2, 7)}`;
+
+            console.log(`[Upload] Starting upload for: ${title} (slug: ${slug})`);
 
             // Upload audio file to Supabase Storage
             const audioFileName = `${userId}/${Date.now()}-${slug}.${audioFile.originalname.split('.').pop()}`;
+
+            // Proactive check: Ensure bucket exists (or at least try to upload and catch)
             const { error: audioUploadError } = await supabaseAdmin.storage
                 .from('audio-files')
                 .upload(audioFileName, audioFile.buffer, {
@@ -395,8 +400,12 @@ router.post(
                 });
 
             if (audioUploadError) {
-                console.error('Audio upload error:', audioUploadError);
-                return res.status(500).json({ error: 'Failed to upload audio file' });
+                console.error('[Upload] Audio storage error:', audioUploadError);
+                return res.status(500).json({
+                    error: 'Failed to upload audio file',
+                    details: audioUploadError.message,
+                    hint: 'Ensure the "audio-files" bucket exists in Supabase storage and is public/accessible.'
+                });
             }
 
             // Upload cover image if provided
@@ -411,10 +420,14 @@ router.post(
                     });
 
                 if (coverUploadError) {
-                    console.error('Cover upload error:', coverUploadError);
-                    // Delete the audio file since the upload partially failed
+                    console.error('[Upload] Cover storage error:', coverUploadError);
+                    // Cleanup audio file
                     await supabaseAdmin.storage.from('audio-files').remove([audioFileName]);
-                    return res.status(500).json({ error: 'Failed to upload cover image' });
+                    return res.status(500).json({
+                        error: 'Failed to upload cover image',
+                        details: coverUploadError.message,
+                        hint: 'Ensure the "cover-images" bucket exists in Supabase storage.'
+                    });
                 }
                 coverStoragePath = coverFileName;
             }
@@ -440,13 +453,19 @@ router.post(
                 .single();
 
             if (songError) {
-                // Clean up uploaded files
+                console.error('[Upload] Database insert error:', songError);
+                // Cleanup files
                 await supabaseAdmin.storage.from('audio-files').remove([audioFileName]);
                 if (coverStoragePath) {
                     await supabaseAdmin.storage.from('cover-images').remove([coverStoragePath]);
                 }
-                throw songError;
+                return res.status(500).json({
+                    error: 'Failed to save song record',
+                    details: songError.message
+                });
             }
+
+            console.log(`[Upload] Song uploaded successfully: ${song.id}`);
 
             // Log activity
             await supabaseAdmin.from('activity_logs').insert({
@@ -466,8 +485,8 @@ router.post(
                 },
             });
         } catch (error) {
-            console.error('Upload error:', error);
-            res.status(500).json({ error: 'Failed to upload song' });
+            console.error('[Upload] Unexpected server error:', error);
+            res.status(500).json({ error: 'An unexpected error occurred during upload' });
         }
     }
 );
